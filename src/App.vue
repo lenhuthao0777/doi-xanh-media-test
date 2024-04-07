@@ -13,7 +13,14 @@ type Task = {
 
 const storageData = localStorage.getItem('tasks');
 
-const parseData = storageData ? JSON.parse(storageData) : [];
+const parseData = storageData
+  ? JSON.parse(storageData)
+      .slice()
+      .sort(
+        (a: Task, b: Task) =>
+          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      )
+  : [];
 
 const taskList = ref(parseData);
 
@@ -38,6 +45,12 @@ const handleCheck = (event: { data: Task; checked: boolean }) => {
 
 const handleCreate = (task: Task) => {
   taskList.value.push(task);
+  taskList.value = taskList.value
+    .slice()
+    .sort(
+      (a: Task, b: Task) =>
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    );
   syncTaskList('tasks', taskList.value);
 };
 
@@ -68,13 +81,18 @@ const handleUpdate = (data: Task) => {
   const ans = taskList.value.map((task: Task) =>
     task.id === data.id ? { ...task, ...data } : task
   );
-  taskList.value = ans;
+  taskList.value = ans
+    .slice()
+    .sort(
+      (a: Task, b: Task) =>
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    );
   syncTaskList('tasks', taskList.value);
 };
 
 const handleSearch = () => {
   if (searchTerm.value === '') {
-    taskList.value = parseData
+    taskList.value = parseData;
   } else {
     const ans = parseData.filter((task: Task) =>
       task.title?.toLowerCase().includes(searchTerm.value.toLowerCase())
@@ -120,7 +138,7 @@ const handleSearch = () => {
           <span>Bulk Action:</span>
           <div class="space-x-2">
             <ElButton
-              :disabled="!tasks.length"
+              disabled
               type="primary"
               @click="handleDoneTask"
             >
