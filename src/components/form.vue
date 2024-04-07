@@ -40,12 +40,12 @@ const minDate = (rule: any, value: any, callback: any) => {
 
 const rules = reactive<FormRules<FormData>>({
   title: [
-    { required: true, message: 'Please input Activity title', trigger: 'blur' },
+    { required: true, message: 'Please input Activity title', trigger: 'change' },
   ],
   dueDate: [
     {
       validator: minDate,
-      trigger: 'blur',
+      trigger: 'change',
     },
   ],
 });
@@ -121,7 +121,7 @@ const prioritySelect = [
             style="width: 100%"
             :rows="4"
             type="textarea"
-            placeholder="Please input"
+            placeholder="Please enter description"
           />
         </el-form-item>
 

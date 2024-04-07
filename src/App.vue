@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import Form from './components/form.vue';
 
 type Task = {
@@ -11,22 +11,15 @@ type Task = {
   priority: string;
 };
 
-const storageData = localStorage.getItem('tasks');
-
-const parseData = storageData
-  ? JSON.parse(storageData)
-      .slice()
-      .sort(
-        (a: Task, b: Task) =>
-          new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
-      )
-  : [];
-
-const taskList = ref(parseData);
+const taskList = ref<Array<Task>>([]);
 
 const tasks = ref<Array<Task>>([]);
 
 const searchTerm = ref('');
+
+const parseTaskData = () => {
+  return JSON.parse(localStorage.getItem('tasks') as any) || [];
+};
 
 const syncTaskList = (key: string, data: any) => {
   localStorage.setItem(key, JSON.stringify(data));
@@ -45,61 +38,84 @@ const handleCheck = (event: { data: Task; checked: boolean }) => {
 
 const handleCreate = (task: Task) => {
   taskList.value.push(task);
-  taskList.value = taskList.value
+  syncTaskList('tasks', taskList.value);
+
+  taskList.value = parseTaskData()
     .slice()
     .sort(
       (a: Task, b: Task) =>
         new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
     );
-  syncTaskList('tasks', taskList.value);
-};
-
-const handleDoneTask = () => {
-  syncTaskList('tasks', taskList.value);
-  tasks.value = [];
 };
 
 const handleRemoveTask = (id: string) => {
   const idx = taskList.value.findIndex((item: Task) => item.id === id);
+  const storageData = parseTaskData();
+  const idxStorageData = storageData.findIndex((item: Task) => item.id === id);
   if (idx !== -1) {
     taskList.value.splice(idx, 1);
-    syncTaskList('tasks', taskList.value);
+    storageData.splice(idxStorageData, 1);
+    syncTaskList('tasks', storageData);
   }
 };
 
 const handleRemoveTasks = () => {
+  const storageData = parseTaskData();
   for (let i = 0; i < tasks.value.length; i++) {
     const idx = taskList.value.findIndex(
       (item: Task) => item.id === tasks.value[i]?.id
     );
+    const idxStorageData = storageData.findIndex(
+      (item: Task) => item.id === tasks.value[i]?.id
+    );
     taskList.value.splice(idx, 1);
+    storageData.splice(idxStorageData, 1);
   }
-  syncTaskList('tasks', taskList.value);
+  syncTaskList('tasks', storageData);
 };
 
 const handleUpdate = (data: Task) => {
+  const storageData = parseTaskData();
+
+  const ansStorageData = storageData.map((task: Task) =>
+    task.id === data.id ? { ...task, ...data } : task
+  );
   const ans = taskList.value.map((task: Task) =>
     task.id === data.id ? { ...task, ...data } : task
   );
+  syncTaskList('tasks', ansStorageData);
   taskList.value = ans
     .slice()
     .sort(
       (a: Task, b: Task) =>
         new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
     );
-  syncTaskList('tasks', taskList.value);
 };
 
 const handleSearch = () => {
-  if (searchTerm.value === '') {
-    taskList.value = parseData;
+  if (!searchTerm.value) {
+    taskList.value = parseTaskData().slice()
+    .sort(
+      (a: Task, b: Task) =>
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    );;
   } else {
-    const ans = parseData.filter((task: Task) =>
+    const ans = parseTaskData().filter((task: Task) =>
       task.title?.toLowerCase().includes(searchTerm.value.toLowerCase())
     );
     taskList.value = ans;
   }
 };
+
+onMounted(() => {
+  taskList.value = parseTaskData()
+    .slice()
+    .sort(
+      (a: Task, b: Task) =>
+        new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+    );
+  syncTaskList('tasks', taskList.value);
+});
 </script>
 
 <template>
@@ -137,13 +153,7 @@ const handleSearch = () => {
         >
           <span>Bulk Action:</span>
           <div class="space-x-2">
-            <ElButton
-              disabled
-              type="primary"
-              @click="handleDoneTask"
-            >
-              Done
-            </ElButton>
+            <ElButton disabled type="primary"> Done </ElButton>
             <ElButton
               :disabled="!tasks.length"
               @click="handleRemoveTasks"
