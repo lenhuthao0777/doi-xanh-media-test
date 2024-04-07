@@ -32,7 +32,6 @@ const form = reactive({ ...initialState });
 
 const minDate = (rule: any, value: any, callback: any) => {
   if (value < new Date()) {
-    console.log(value);
     callback(new Error('Due date must be greater than current date'));
   } else {
     callback();
